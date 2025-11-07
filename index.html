@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Bloxd Autoclicker Detector — Rejo Edition (Fixed)</title>
+    <title>Bloxd Autoclicker Detector — Rejo Edition (Final)</title>
 
     <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -23,15 +23,15 @@
         background: #050505;
         border: 1px solid #141414;
       }
-      @keyframes breathe {
-        0% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.7)); }
-        50% { transform: scale(1.1); filter: drop-shadow(0 0 20px rgba(255,255,255,1)); }
-        100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.7)); }
-      }
       .palm {
         width: 64px;
         height: 64px;
         animation: breathe 3s ease-in-out infinite;
+      }
+      @keyframes breathe {
+        0% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.7)); }
+        50% { transform: scale(1.1); filter: drop-shadow(0 0 20px rgba(255,255,255,1)); }
+        100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.7)); }
       }
       .sparkline-canvas {
         width: 100%;
@@ -65,7 +65,7 @@
 
       const HYPIXEL_DOUBLECLICK = 50; // ms threshold
 
-      /* simplified analyzeClicks with enhanced detection */
+      /* Final analyzeClicks with suspicion-based verdict */
       function analyzeClicks(timestamps) {
         if (timestamps.length < 2)
           return { cps: 0, intervals: [], verdict: "insufficient", reasons: ["Not enough clicks"] };
@@ -85,11 +85,30 @@
         let bursts = intervals.filter(i=>i<=70).length;
 
         const reasons=[];
+
+        // detection logic
         if (consistency>70) reasons.push("Very consistent intervals");
         if (doubleClicks>3) reasons.push("Multiple double clicks detected");
         if (bursts>6) reasons.push("Rapid bursts detected");
 
-        const verdict = reasons.length>0?"suspicious":"clean";
+        // oscillation
+        let oscillations=0;
+        for(let i=2;i<intervals.length;i++){
+          const a=intervals[i-2],b=intervals[i-1],c=intervals[i];
+          if((c>b&&b<a)||(c<b&&b>a)) oscillations++;
+        }
+        if(oscillations>=intervals.length*0.45) reasons.push("Oscillation pattern detected");
+
+        // threshold spikes
+        const spikes=intervals.filter(i=>i<30).length;
+        if(spikes>3) reasons.push("Threshold spikes detected");
+
+        // determine verdict
+        const suspicionCount = reasons.length;
+        let verdict;
+        if (suspicionCount >= 3) verdict = "auto";
+        else verdict = "legit";
+
         return { cps, intervals, consistency, doubleClicks, bursts, verdict, reasons };
       }
 
@@ -193,7 +212,7 @@
 
               {step===1&&(
                 <div className="space-y-6">
-                  <p>Click the button below to start.</p>
+                  <p>Click below to begin testing your clicks.</p>
                   <button onClick={()=>setStep(2)} className="w-full py-3 bg-indigo-600 rounded-xl hover:bg-indigo-700">Continue</button>
                 </div>
               )}
@@ -229,7 +248,17 @@
                   <p><b>Clicks:</b> {result.clicks}</p>
                   <p><b>CPS:</b> {result.cps.toFixed(2)}</p>
                   <p><b>Consistency:</b> {result.consistency?.toFixed?.(1) || 0}%</p>
-                  <p><b>Verdict:</b> {result.verdict==="clean"?<span className="text-green-500">Legit</span>:<span className="text-red-500">Suspicious</span>}</p>
+                  
+                  <p><b>Verdict:</b> 
+                    {result.verdict === "auto" ? (
+                      <span className="text-red-500 font-semibold"> Likely Autoclicker</span>
+                    ) : result.verdict === "legit" ? (
+                      <span className="text-green-500 font-semibold"> Probably Legit</span>
+                    ) : (
+                      <span className="text-gray-400"> Insufficient Data</span>
+                    )}
+                  </p>
+
                   {result.reasons?.length>0&&(
                     <ul className="text-red-400 list-disc list-inside text-sm">
                       {result.reasons.map((r,i)=><li key={i}>{r}</li>)}

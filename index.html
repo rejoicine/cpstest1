@@ -23,16 +23,6 @@
         background: #050505;
         border: 1px solid #141414;
       }
-      .palm {
-        width: 64px;
-        height: 64px;
-        animation: breathe 3s ease-in-out infinite;
-      }
-      @keyframes breathe {
-        0% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.7)); }
-        50% { transform: scale(1.1); filter: drop-shadow(0 0 20px rgba(255,255,255,1)); }
-        100% { transform: scale(1); filter: drop-shadow(0 0 8px rgba(255,255,255,0.7)); }
-      }
       .sparkline-canvas {
         width: 100%;
         height: 80px;
@@ -63,17 +53,24 @@
     <script type="text/babel" data-presets="react">
       const { useState, useEffect, useRef } = React;
 
-      const HYPIXEL_DOUBLECLICK = 50; // ms threshold
+      /* -------------------------
+         CodePen Microtime Function
+      --------------------------*/
+      function microtime() {
+        return Date.now() / 1000; // seconds with decimals
+      }
 
-      /* Final analyzeClicks with suspicion-based verdict */
+      /* Final analyzer (unchanged except intervals are in ms) */
       function analyzeClicks(timestamps) {
         if (timestamps.length < 2)
-          return { cps: 0, intervals: [], verdict: "insufficient", reasons: ["Not enough clicks"] };
+          return { cps: 0, intervals: [], verdict: "insufficient", reasons: ["Not enough clicks"], doubleClicks: 0 };
 
         const intervals = [];
-        for (let i = 1; i < timestamps.length; i++) intervals.push(timestamps[i] - timestamps[i - 1]);
+        for (let i = 1; i < timestamps.length; i++) {
+          intervals.push((timestamps[i] - timestamps[i - 1]) * 1000); // convert sec→ms
+        }
 
-        const duration = (timestamps.at(-1) - timestamps[0]) / 1000;
+        const duration = (timestamps.at(-1) - timestamps[0]);
         const cps = (timestamps.length - 1) / duration;
 
         const avg = intervals.reduce((a,b)=>a+b,0)/intervals.length;
@@ -81,17 +78,16 @@
         const std = Math.sqrt(variance);
         const consistency = avg>0?(1-std/avg)*100:0;
 
-        let doubleClicks = intervals.filter(i=>i<=HYPIXEL_DOUBLECLICK).length;
-        let bursts = intervals.filter(i=>i<=70).length;
+        // double click threshold = 80 ms
+        const doubleClicks = intervals.filter(i => i <= 80).length;
+        const bursts = intervals.filter(i => i <= 70).length;
 
         const reasons=[];
 
-        // detection logic
         if (consistency>70) reasons.push("Very consistent intervals");
         if (doubleClicks>3) reasons.push("Multiple double clicks detected");
         if (bursts>6) reasons.push("Rapid bursts detected");
 
-        // oscillation
         let oscillations=0;
         for(let i=2;i<intervals.length;i++){
           const a=intervals[i-2],b=intervals[i-1],c=intervals[i];
@@ -99,15 +95,11 @@
         }
         if(oscillations>=intervals.length*0.45) reasons.push("Oscillation pattern detected");
 
-        // threshold spikes
         const spikes=intervals.filter(i=>i<30).length;
         if(spikes>3) reasons.push("Threshold spikes detected");
 
-        // determine verdict
         const suspicionCount = reasons.length;
-        let verdict;
-        if (suspicionCount >= 3) verdict = "auto";
-        else verdict = "legit";
+        const verdict = suspicionCount >= 3 ? "auto" : "legit";
 
         return { cps, intervals, consistency, doubleClicks, bursts, verdict, reasons };
       }
@@ -117,25 +109,31 @@
         useEffect(() => {
           const c = ref.current;
           if (!c) return;
+
           const ctx = c.getContext("2d");
           const w = c.width = c.offsetWidth * devicePixelRatio;
           const h = c.height = c.offsetHeight * devicePixelRatio;
+
           ctx.scale(devicePixelRatio, devicePixelRatio);
           ctx.clearRect(0,0,w,h);
 
           const data = intervals.slice(-60);
           if (!data.length) return;
+
           const min = Math.min(...data), max = Math.max(...data), range = Math.max(1, max-min);
+
           ctx.beginPath();
           data.forEach((v,i)=>{
             const x=(i/(data.length-1))*c.offsetWidth;
             const y=c.offsetHeight - ((v-min)/range)*c.offsetHeight;
             i?ctx.lineTo(x,y):ctx.moveTo(x,y);
           });
+
           ctx.strokeStyle="#6366f1";
           ctx.lineWidth=2;
           ctx.stroke();
         },[intervals]);
+
         return <canvas ref={ref} className="sparkline-canvas"/>;
       }
 
@@ -144,6 +142,7 @@
         const [length,setLength]=useState(10);
         const [running,setRunning]=useState(false);
         const [count,setCount]=useState(0);
+        const [doubleCount,setDoubleCount]=useState(0);
         const [liveCPS,setLiveCPS]=useState(0);
         const [remaining,setRemaining]=useState(0);
         const [result,setResult]=useState(null);
@@ -173,12 +172,17 @@
           setRunning(true);
           setStep(3);
           setCount(0);
+          setDoubleCount(0);
           setIntervals([]);
-          const startT=Date.now();
+
+          const startT=microtime();
           const tick=setInterval(()=>{
-            const elapsed=(Date.now()-startT)/1000;
+            const elapsed=(microtime()-startT);
             setRemaining(Math.max(0,length-elapsed));
-            if(elapsed>=length){clearInterval(tick);stop();}
+            if(elapsed>=length){
+              clearInterval(tick);
+              stop();
+            }
           },100);
         }
 
@@ -189,17 +193,32 @@
           setStep(4);
         }
 
+        /* ---------------------------------------
+           CLICK HANDLER (REPLACED WITH CODEPEN LOGIC)
+        ----------------------------------------*/
         function click(){
           if(!running) return;
-          const now=Date.now();
-          timesRef.current.push(now);
-          setCount(c=>c+1);
-          const t=timesRef.current;
-          if(t.length>1){
-            const diff=t[t.length-1]-t[t.length-2];
-            setIntervals(prev=>[...prev.slice(-59),diff]);
+
+          const now = microtime();  // CodePen-style timestamp
+          const t = timesRef.current;
+
+          t.push(now); 
+          setCount(c => c + 1);
+
+          if (t.length > 1) {
+            const diff = now - t[t.length - 2]; // seconds
+
+            // Fast double click threshold: 80ms (0.08s)
+            if (diff <= 0.08) {
+              setDoubleCount(dc => dc + 1);
+            }
+
+            // sparkline uses ms
+            setIntervals(prev => [...prev.slice(-59), diff * 1000]);
           }
-          const cps=t.filter(ts=>ts>now-1000).length;
+
+          // live CPS = last 1s of clicks
+          const cps = t.filter(ts => ts > now - 1).length;
           setLiveCPS(cps);
         }
 
@@ -233,11 +252,14 @@
                   >
                     CLICK HERE
                   </div>
+
                   <div className="flex justify-between text-sm opacity-80">
                     <span>Clicks: {count}</span>
                     <span>Live CPS: {liveCPS.toFixed(1)}</span>
+                    <span>Double Clicks: {doubleCount}</span>
                     <span>Time: {remaining.toFixed(1)}s</span>
                   </div>
+
                   <Sparkline intervals={intervals}/>
                 </div>
               )}
@@ -248,7 +270,8 @@
                   <p><b>Clicks:</b> {result.clicks}</p>
                   <p><b>CPS:</b> {result.cps.toFixed(2)}</p>
                   <p><b>Consistency:</b> {result.consistency?.toFixed?.(1) || 0}%</p>
-                  
+                  <p><b>Double Clicks:</b> {result.doubleClicks}</p>
+
                   <p><b>Verdict:</b> 
                     {result.verdict === "auto" ? (
                       <span className="text-red-500 font-semibold"> Likely Autoclicker</span>
@@ -264,7 +287,9 @@
                       {result.reasons.map((r,i)=><li key={i}>{r}</li>)}
                     </ul>
                   )}
+
                   <Sparkline intervals={result.intervals}/>
+
                   <button onClick={()=>setStep(2)} className="w-full py-3 bg-indigo-600 rounded-xl hover:bg-indigo-700">Run Again</button>
                 </div>
               )}

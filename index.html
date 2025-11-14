@@ -49,7 +49,6 @@
   <body>
     <div id="root"></div>
 
-    <!-- React App -->
     <script type="text/babel" data-presets="react">
       const { useState, useEffect, useRef } = React;
 
@@ -102,6 +101,7 @@
         if (doubleClicks>3) reasons.push("Multiple double clicks detected");
         if (bursts>6) reasons.push("Rapid bursts detected");
 
+        // Oscillations / spikes detection
         let oscillations=0;
         for(let i=2;i<intervals.length;i++){
           const a=intervals[i-2],b=intervals[i-1],c=intervals[i];
@@ -112,8 +112,18 @@
         const spikes=intervals.filter(i=>i<30).length;
         if(spikes>3) reasons.push("Threshold spikes detected");
 
-        const suspicionCount = reasons.length;
-        const verdict = suspicionCount >= 3 ? "auto" : "legit";
+        // Percentages
+        const doubleClickPercentage = (doubleClicks / timestamps.length) * 100;
+        const oscillationPercentage = (intervals.length > 0) ? (oscillations / intervals.length) * 100 : 0;
+
+        let verdict = "legit";
+
+        if (doubleClickPercentage > 50 && doubleClickPercentage < 80 && oscillationPercentage > 50) {
+          verdict = "broken-mouse";
+          reasons.push("Mouse probably broken (double clicks / switch issue)");
+        } else if (reasons.length >= 3) {
+          verdict = "auto";
+        }
 
         return { cps, intervals, consistency, doubleClicks, bursts, verdict, reasons };
       }
@@ -263,7 +273,7 @@
                   <div
                     onPointerDown={click}
                     onContextMenu={(e)=>e.preventDefault()}
-                    className="w-full bg-red-600 text-3xl font-bold rounded-3xl py-24 select-none cursor-pointer active:scale-95 transition-transform"
+                    className="w-full bg-red-600 text-3xl font-bold rounded-3xl py-40 select-none cursor-pointer active:scale-95 transition-transform"
                   >
                     CLICK HERE
                   </div>
@@ -292,6 +302,8 @@
                   <p><b>Verdict:</b> 
                     {result.verdict === "auto" ? (
                       <span className="text-red-500 font-semibold"> Likely Autoclicker</span>
+                    ) : result.verdict === "broken-mouse" ? (
+                      <span className="text-yellow-400 font-semibold"> Mouse Probably Broken</span>
                     ) : result.verdict === "legit" ? (
                       <span className="text-green-500 font-semibold"> Probably Legit</span>
                     ) : (

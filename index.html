@@ -54,23 +54,57 @@
       const { useState, useEffect, useRef } = React;
 
       /* -------------------------
-         CodePen Microtime Function
+         Mouse Button Viewer Component
       --------------------------*/
-      function microtime() {
-        return Date.now() / 1000; // seconds with decimals
+      function MouseViewer({ lastButton }) {
+        const highlight = (btn) => lastButton === btn ? "#ffffff" : "#666";
+
+        return (
+          <div className="flex flex-col items-center mt-3">
+            <svg width="120" viewBox="0 0 800 800">
+              <path fill="#222" d="M407.352 0C270.94 0 132.854 68.485 132.854 199.394v333.458c0 147.309 119.834 267.146 267.146 267.146 147.31 0 267.144-119.837 267.144-267.146V199.394C667.144 62.392 532.484 0 407.352 0z"/>
+
+              <path 
+                fill={highlight("left")} 
+                d="M353.91 80.986v232.572c-35.626 6.284-140.372-23.044-140.372-23.044C186.301 83.084 353.91 80.986 353.91 80.986z"
+              />
+
+              <path 
+                fill={highlight("middle")}
+                d="M428.285 108.565v182.287c0 13.88-11.27 25.146-25.142 25.146-13.876 0-25.144-11.265-25.144-25.146V108.565c0-13.879 11.266-25.144 25.144-25.144 13.87 0 25.142 11.265 25.142 25.144z"
+              />
+
+              <path 
+                fill={highlight("right")}
+                d="M592.917 292.514s-104.746 29.328-140.372 23.044V82.986s167.61 2.097 140.372 209.528z"
+              />
+            </svg>
+
+            <p className="text-xs text-gray-400 mt-1">Mouse Button Viewer</p>
+          </div>
+        );
       }
 
-      /* Final analyzer (unchanged except intervals are in ms) */
+      /* -------------------------
+         Microtime
+      --------------------------*/
+      function microtime() {
+        return Date.now() / 1000;
+      }
+
+      /* -------------------------
+         Analyzer
+      --------------------------*/
       function analyzeClicks(timestamps) {
         if (timestamps.length < 2)
           return { cps: 0, intervals: [], verdict: "insufficient", reasons: ["Not enough clicks"], doubleClicks: 0 };
 
         const intervals = [];
         for (let i = 1; i < timestamps.length; i++) {
-          intervals.push((timestamps[i] - timestamps[i - 1]) * 1000); // convert sec→ms
+          intervals.push((timestamps[i] - timestamps[i - 1]) * 1000);
         }
 
-        const duration = (timestamps.at(-1) - timestamps[0]);
+        const duration = timestamps.at(-1) - timestamps[0];
         const cps = (timestamps.length - 1) / duration;
 
         const avg = intervals.reduce((a,b)=>a+b,0)/intervals.length;
@@ -78,7 +112,6 @@
         const std = Math.sqrt(variance);
         const consistency = avg>0?(1-std/avg)*100:0;
 
-        // double click threshold = 80 ms
         const doubleClicks = intervals.filter(i => i <= 80).length;
         const bursts = intervals.filter(i => i <= 70).length;
 
@@ -104,6 +137,9 @@
         return { cps, intervals, consistency, doubleClicks, bursts, verdict, reasons };
       }
 
+      /* -------------------------
+         Sparkline
+      --------------------------*/
       function Sparkline({ intervals }) {
         const ref = useRef(null);
         useEffect(() => {
@@ -137,6 +173,9 @@
         return <canvas ref={ref} className="sparkline-canvas"/>;
       }
 
+      /* -------------------------
+         MAIN APP
+      --------------------------*/
       function App(){
         const [step,setStep]=useState(1);
         const [length,setLength]=useState(10);
@@ -148,6 +187,7 @@
         const [result,setResult]=useState(null);
         const [countdown,setCountdown]=useState(null);
         const [intervals,setIntervals]=useState([]);
+        const [lastButton,setLastButton]=useState(null);
 
         const timesRef=useRef([]);
 
@@ -193,31 +233,25 @@
           setStep(4);
         }
 
-        /* ---------------------------------------
-           CLICK HANDLER (REPLACED WITH CODEPEN LOGIC)
-        ----------------------------------------*/
-        function click(){
+        /* CLICK HANDLER (now with mouse button tracking) */
+        function click(e){
           if(!running) return;
 
-          const now = microtime();  // CodePen-style timestamp
+          const map={0:"left",1:"middle",2:"right"};
+          setLastButton(map[e.button] || null);
+
+          const now = microtime();
           const t = timesRef.current;
 
           t.push(now); 
           setCount(c => c + 1);
 
           if (t.length > 1) {
-            const diff = now - t[t.length - 2]; // seconds
-
-            // Fast double click threshold: 80ms (0.08s)
-            if (diff <= 0.08) {
-              setDoubleCount(dc => dc + 1);
-            }
-
-            // sparkline uses ms
+            const diff = now - t[t.length - 2];
+            if (diff <= 0.08) setDoubleCount(dc => dc + 1);
             setIntervals(prev => [...prev.slice(-59), diff * 1000]);
           }
 
-          // live CPS = last 1s of clicks
           const cps = t.filter(ts => ts > now - 1).length;
           setLiveCPS(cps);
         }
@@ -229,6 +263,7 @@
                 <span className="text-indigo-500">Rejo</span> Autoclicker Detector
               </h1>
 
+              {/* STEP 1 */}
               {step===1&&(
                 <div className="space-y-6">
                   <p>Click below to begin testing your clicks.</p>
@@ -236,6 +271,7 @@
                 </div>
               )}
 
+              {/* STEP 2 */}
               {step===2&&(
                 <div className="space-y-4">
                   <label>Test length: {length}s</label>
@@ -244,6 +280,7 @@
                 </div>
               )}
 
+              {/* STEP 3 (TEST RUNNING) */}
               {step===3&&(
                 <div className="space-y-4 text-center">
                   <div
@@ -261,9 +298,11 @@
                   </div>
 
                   <Sparkline intervals={intervals}/>
+                  <MouseViewer lastButton={lastButton}/>
                 </div>
               )}
 
+              {/* STEP 4 (RESULTS) */}
               {step===4&&result&&(
                 <div className="space-y-3">
                   <h2 className="text-xl font-semibold">Results</h2>

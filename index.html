@@ -53,9 +53,7 @@
     <script type="text/babel" data-presets="react">
       const { useState, useEffect, useRef } = React;
 
-      /* -------------------------
-         Mouse Button Viewer Component
-      --------------------------*/
+      // ----------------- Mouse Viewer -----------------
       function MouseViewer({ lastButton }) {
         const highlight = (btn) => lastButton === btn ? "#ffffff" : "#666";
 
@@ -63,38 +61,21 @@
           <div className="flex flex-col items-center mt-3">
             <svg width="120" viewBox="0 0 800 800">
               <path fill="#222" d="M407.352 0C270.94 0 132.854 68.485 132.854 199.394v333.458c0 147.309 119.834 267.146 267.146 267.146 147.31 0 267.144-119.837 267.144-267.146V199.394C667.144 62.392 532.484 0 407.352 0z"/>
-
-              <path 
-                fill={highlight("left")} 
-                d="M353.91 80.986v232.572c-35.626 6.284-140.372-23.044-140.372-23.044C186.301 83.084 353.91 80.986 353.91 80.986z"
-              />
-
-              <path 
-                fill={highlight("middle")}
-                d="M428.285 108.565v182.287c0 13.88-11.27 25.146-25.142 25.146-13.876 0-25.144-11.265-25.144-25.146V108.565c0-13.879 11.266-25.144 25.144-25.144 13.87 0 25.142 11.265 25.142 25.144z"
-              />
-
-              <path 
-                fill={highlight("right")}
-                d="M592.917 292.514s-104.746 29.328-140.372 23.044V82.986s167.61 2.097 140.372 209.528z"
-              />
+              <path fill={highlight("left")} d="M353.91 80.986v232.572c-35.626 6.284-140.372-23.044-140.372-23.044C186.301 83.084 353.91 80.986 353.91 80.986z"/>
+              <path fill={highlight("middle")} d="M428.285 108.565v182.287c0 13.88-11.27 25.146-25.142 25.146-13.876 0-25.144-11.265-25.144-25.146V108.565c0-13.879 11.266-25.144 25.144-25.144 13.87 0 25.142 11.265 25.142 25.144z"/>
+              <path fill={highlight("right")} d="M592.917 292.514s-104.746 29.328-140.372 23.044V82.986s167.61 2.097 140.372 209.528z"/>
             </svg>
-
             <p className="text-xs text-gray-400 mt-1">Mouse Button Viewer</p>
           </div>
         );
       }
 
-      /* -------------------------
-         Microtime
-      --------------------------*/
+      // ----------------- Microtime -----------------
       function microtime() {
         return Date.now() / 1000;
       }
 
-      /* -------------------------
-         Analyzer
-      --------------------------*/
+      // ----------------- Analyzer -----------------
       function analyzeClicks(timestamps) {
         if (timestamps.length < 2)
           return { cps: 0, intervals: [], verdict: "insufficient", reasons: ["Not enough clicks"], doubleClicks: 0 };
@@ -137,19 +118,15 @@
         return { cps, intervals, consistency, doubleClicks, bursts, verdict, reasons };
       }
 
-      /* -------------------------
-         Sparkline
-      --------------------------*/
+      // ----------------- Sparkline -----------------
       function Sparkline({ intervals }) {
         const ref = useRef(null);
         useEffect(() => {
           const c = ref.current;
           if (!c) return;
-
           const ctx = c.getContext("2d");
           const w = c.width = c.offsetWidth * devicePixelRatio;
           const h = c.height = c.offsetHeight * devicePixelRatio;
-
           ctx.scale(devicePixelRatio, devicePixelRatio);
           ctx.clearRect(0,0,w,h);
 
@@ -173,9 +150,7 @@
         return <canvas ref={ref} className="sparkline-canvas"/>;
       }
 
-      /* -------------------------
-         MAIN APP
-      --------------------------*/
+      // ----------------- Main App -----------------
       function App(){
         const [step,setStep]=useState(1);
         const [length,setLength]=useState(10);
@@ -188,9 +163,9 @@
         const [countdown,setCountdown]=useState(null);
         const [intervals,setIntervals]=useState([]);
         const [lastButton,setLastButton]=useState(null);
-
         const timesRef=useRef([]);
 
+        // Countdown before start
         function bigStartCountdown(){
           setCountdown(3);
           let n=3;
@@ -214,7 +189,6 @@
           setCount(0);
           setDoubleCount(0);
           setIntervals([]);
-
           const startT=microtime();
           const tick=setInterval(()=>{
             const elapsed=(microtime()-startT);
@@ -233,9 +207,12 @@
           setStep(4);
         }
 
-        /* CLICK HANDLER (now with mouse button tracking) */
+        // Click handler for left, right, middle
         function click(e){
           if(!running) return;
+
+          // prevent right-click menu
+          e.preventDefault();
 
           const map={0:"left",1:"middle",2:"right"};
           setLastButton(map[e.button] || null);
@@ -263,7 +240,7 @@
                 <span className="text-indigo-500">Rejo</span> Autoclicker Detector
               </h1>
 
-              {/* STEP 1 */}
+              {/* Step 1 */}
               {step===1&&(
                 <div className="space-y-6">
                   <p>Click below to begin testing your clicks.</p>
@@ -271,7 +248,7 @@
                 </div>
               )}
 
-              {/* STEP 2 */}
+              {/* Step 2 */}
               {step===2&&(
                 <div className="space-y-4">
                   <label>Test length: {length}s</label>
@@ -280,11 +257,12 @@
                 </div>
               )}
 
-              {/* STEP 3 (TEST RUNNING) */}
+              {/* Step 3 */}
               {step===3&&(
                 <div className="space-y-4 text-center">
                   <div
                     onPointerDown={click}
+                    onContextMenu={(e)=>e.preventDefault()}
                     className="w-full bg-red-600 text-3xl font-bold rounded-3xl py-24 select-none cursor-pointer active:scale-95 transition-transform"
                   >
                     CLICK HERE
@@ -302,7 +280,7 @@
                 </div>
               )}
 
-              {/* STEP 4 (RESULTS) */}
+              {/* Step 4 */}
               {step===4&&result&&(
                 <div className="space-y-3">
                   <h2 className="text-xl font-semibold">Results</h2>
@@ -328,7 +306,6 @@
                   )}
 
                   <Sparkline intervals={result.intervals}/>
-
                   <button onClick={()=>setStep(2)} className="w-full py-3 bg-indigo-600 rounded-xl hover:bg-indigo-700">Run Again</button>
                 </div>
               )}

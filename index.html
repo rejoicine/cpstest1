@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Site Offline — Edge Request Error</title>
+  <title>Vercel Edge Error</title>
   <meta name="robots" content="noindex,nofollow">
   <style>
     :root{
@@ -11,97 +11,185 @@
       --card:#0f1720;
       --muted:#94a3b8;
       --accent:#7c3aed;
-      --danger:#ef4444;
       --glass: rgba(255,255,255,0.03);
     }
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,var(--bg),#02040a);color:#eef2ff}
-    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px}
+    html,body{
+      height:100%;
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;
+      background:linear-gradient(180deg,var(--bg),#02040a);
+      color:#eef2ff;
+    }
+    .wrap{
+      min-height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:32px;
+    }
     .card{
-      width:100%;max-width:920px;padding:32px;border-radius:12px;background:linear-gradient(180deg,var(--card),rgba(15,23,32,0.9));
-      box-shadow:0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
-      border:1px solid rgba(255,255,255,0.03);
+      width:100%;
+      max-width:980px;
+      padding:32px;
+      border-radius:16px;
+      background:linear-gradient(180deg,var(--card),rgba(15,23,32,0.92));
+      border:1px solid rgba(255,255,255,0.05);
+      box-shadow:0 10px 30px rgba(2,6,23,0.65);
       backdrop-filter: blur(6px);
+
+      display:flex;
+      gap:32px;
     }
-    h1{margin:0 0 8px;font-size:22px;letter-spacing:-0.4px}
-    p.lead{margin:0 0 18px;color:var(--muted);line-height:1.45}
+
+    .left{
+      flex:2;
+    }
+
+    .right{
+      flex:1;
+    }
+
     .status{
-      display:inline-flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--glass);
-      border:1px solid rgba(255,255,255,0.03);font-weight:600;color:#fff;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:10px 14px;
+      border-radius:10px;
+      background:var(--glass);
+      border:1px solid rgba(255,255,255,0.03);
+      font-weight:600;
+      color:#fff;
+      margin-bottom:16px;
     }
-    .status .code{background:rgba(0,0,0,0.25);padding:6px 10px;border-radius:8px;font-weight:700}
-    .explain{display:grid;grid-template-columns:1fr 260px;gap:24px;margin-top:18px}
-    .box{padding:16px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
-    .actions{display:flex;gap:12px;margin-top:14px}
-    a.btn{display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:600}
-    .btn.retry{background:linear-gradient(90deg,var(--accent),#4f46e5);color:white}
-    .btn.status{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
-    .hint{font-size:13px;color:var(--muted);margin-top:12px}
-    footer{margin-top:18px;color:var(--muted);font-size:13px}
+
+    .vercel-icon{
+      width:20px;
+      height:20px;
+      display:inline-block;
+    }
+
+    h1{
+      margin:0 0 12px;
+      font-size:26px;
+      font-weight:700;
+      letter-spacing:-0.5px;
+    }
+    p{
+      color:var(--muted);
+      line-height:1.55;
+      font-size:15px;
+    }
+
+    .retry-btn{
+      margin-top:18px;
+      padding:12px 18px;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,0.08);
+      background:rgba(255,255,255,0.06);
+      color:#fff;
+      font-weight:600;
+      cursor:pointer;
+      transition:0.2s;
+    }
+    .retry-btn:hover{
+      background:rgba(255,255,255,0.12);
+      transform:scale(1.03);
+    }
+    .retry-btn:active{
+      transform:scale(0.97);
+    }
+
+    .statbox{
+      padding:18px;
+      border-radius:14px;
+      background:var(--glass);
+      border:1px solid rgba(255,255,255,0.05);
+      margin-bottom:18px;
+    }
+    .value{
+      font-size:30px;
+      font-weight:700;
+      margin-bottom:4px;
+    }
+    .label{
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    footer{
+      margin-top:18px;
+      color:var(--muted);
+      font-size:13px;
+      opacity:0.7;
+    }
+
     @media (max-width:760px){
-      .explain{grid-template-columns:1fr;gap:12px}
-      .card{padding:20px}
+      .card{
+        flex-direction:column;
+      }
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="card" role="status" aria-live="polite">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap">
-        <div>
-          <div class="status" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex:0 0 auto">
-              <path d="M12 2v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M5 8v7a7 7 0 0 0 14 0V8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M8 8h8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span style="display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1">
-              <span style="font-size:13px;opacity:0.95">Site Offline</span>
-              <span style="font-size:12px;color:var(--muted)">Edge request failure</span>
-            </span>
-          </div>
+    <div class="card">
+
+      <!-- LEFT SIDE -->
+      <div class="left">
+
+        <div class="status">
+          <!-- Vercel Triangle -->
+          <svg class="vercel-icon" viewBox="0 0 75 65" fill="white">
+            <path d="M37.5 0L75 65H0L37.5 0z"/>
+          </svg>
+
+          Edge Function Error — Code 503
         </div>
 
-        <div class="status" aria-hidden="true">
-          <span class="code">503</span>
-          <span style="opacity:0.85">Vercel edge handler error</span>
-        </div>
+        <h1>Vercel cannot handle edge requests</h1>
+
+        <p>
+          The edge runtime failed while processing this request.
+          This deployment is temporarily offline due to an overloaded or failing Edge Function.
+        </p>
+
+        <p style="margin-top:12px; color:var(--muted);">
+          What this means:
+        </p>
+
+        <ul style="color:var(--muted); line-height:1.55;">
+          <li>Edge regions exceeded execution capacity</li>
+          <li>Middleware or API handler crashed</li>
+          <li>Deployment temporarily halted by Vercel</li>
+        </ul>
+
+        <!-- RETRY BUTTON -->
+        <button class="retry-btn" onclick="location.reload()">
+          Retry Request
+        </button>
+
+        <footer>
+          Reference Code: <code>VERCEL_EDGE_503</code>
+        </footer>
       </div>
 
-      <h1>Vercel cannot handle edge requests — site is offline</h1>
-      <p class="lead">The server attempted to process an edge function request but failed. The site is temporarily offline for edge requests. This page indicates the deployment couldn't serve the request from an edge runtime.</p>
-
-      <div class="explain">
-        <div class="box">
-          <strong>What happened</strong>
-          <ul style="margin:12px 0 0 18px;color:var(--muted);line-height:1.6">
-            <li>Edge runtime did not respond or is misconfigured.</li>
-            <li>The request could not be routed to a fallback server.</li>
-            <li>Deployment may be paused or contains an incompatible edge handler.</li>
-          </ul>
-
-          <div class="actions">
-            <a class="btn retry" href="#" onclick="location.reload();return false">Retry</a>
-            <a class="btn status" href="#" onclick="alert('Contact site owner or check Vercel dashboard.');return false">Check status</a>
-          </div>
-
-          <p class="hint">If you are the site owner: check your Vercel dashboard, verify your edge function configuration, and confirm there are healthy regions for edge runtime.</p>
+      <!-- RIGHT SIDE: STATS -->
+      <div class="right">
+        <div class="statbox">
+          <div class="value">4,000+</div>
+          <div class="label">Requests this week</div>
         </div>
 
-        <div class="box">
-          <strong>Quick troubleshooting</strong>
-          <ol style="margin:12px 0 0 18px;color:var(--muted);line-height:1.6;padding-left:14px">
-            <li>Open the Vercel deployment dashboard.</li>
-            <li>Check edge function logs and recent failures.</li>
-            <li>Temporarily disable edge middleware to serve from serverless functions.</li>
-            <li>Verify runtime/Node version and environment variables.</li>
-          </ol>
+        <div class="statbox">
+          <div class="value">£230</div>
+          <div class="label">Revenue generated</div>
         </div>
+
+        <footer style="text-align:left; margin-top:10px;">
+          Updated automatically · Last 7 days
+        </footer>
       </div>
 
-      <footer>
-        <div>Reference code: <code style="background:rgba(255,255,255,0.02);padding:4px 8px;border-radius:6px">HTTP 503 — Service Unavailable</code></div>
-        <div style="margin-top:8px">If you need help, contact the site administrator or try again in a few minutes.</div>
-      </footer>
     </div>
   </div>
 </body>

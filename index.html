@@ -41,13 +41,8 @@
       gap:32px;
     }
 
-    .left{
-      flex:2;
-    }
-
-    .right{
-      flex:1;
-    }
+    .left{ flex:2; }
+    .right{ flex:1; }
 
     .status{
       display:flex;
@@ -62,11 +57,7 @@
       margin-bottom:16px;
     }
 
-    .vercel-icon{
-      width:20px;
-      height:20px;
-      display:inline-block;
-    }
+    .vercel-icon{ width:20px; height:20px; }
 
     h1{
       margin:0 0 12px;
@@ -106,14 +97,31 @@
       border:1px solid rgba(255,255,255,0.05);
       margin-bottom:18px;
     }
-    .value{
-      font-size:30px;
-      font-weight:700;
-      margin-bottom:4px;
+    .value{ font-size:30px; font-weight:700; margin-bottom:4px; }
+    .label{ color:var(--muted); font-size:14px; }
+
+    /* SERVER LOGS PANE */
+    .logbox{
+      height:220px;
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.05);
+      border-radius:14px;
+      padding:14px;
+      font-family: "Fira Code", "Courier New", monospace;
+      font-size:12px;
+      overflow:hidden;
+      position:relative;
     }
-    .label{
-      color:var(--muted);
-      font-size:14px;
+    .logs-scroll{
+      position:absolute;
+      width:100%;
+      animation: scrollLogs 10s linear infinite;
+      white-space:pre;
+      color:#a5b4fc;
+    }
+    @keyframes scrollLogs {
+      0%   { top: 100%; }
+      100% { top: -120%; }
     }
 
     footer{
@@ -124,9 +132,7 @@
     }
 
     @media (max-width:760px){
-      .card{
-        flex-direction:column;
-      }
+      .card{ flex-direction:column; }
     }
   </style>
 </head>
@@ -138,11 +144,9 @@
       <div class="left">
 
         <div class="status">
-          <!-- Vercel Triangle -->
           <svg class="vercel-icon" viewBox="0 0 75 65" fill="white">
             <path d="M37.5 0L75 65H0L37.5 0z"/>
           </svg>
-
           Edge Function Error — Code 503
         </div>
 
@@ -163,7 +167,6 @@
           <li>Deployment temporarily halted by Vercel</li>
         </ul>
 
-        <!-- RETRY BUTTON -->
         <button class="retry-btn" onclick="location.reload()">
           Retry Request
         </button>
@@ -171,10 +174,12 @@
         <footer>
           Reference Code: <code>VERCEL_EDGE_503</code>
         </footer>
+
       </div>
 
-      <!-- RIGHT SIDE: STATS -->
+      <!-- RIGHT SIDE -->
       <div class="right">
+
         <div class="statbox">
           <div class="value">4,000+</div>
           <div class="label">Requests this week</div>
@@ -185,9 +190,27 @@
           <div class="label">Revenue generated</div>
         </div>
 
+        <!-- FAKE SERVER LOGS -->
+        <div class="logbox">
+          <div class="logs-scroll">
+[13:22:01] INIT  — Deploying edge runtime...
+[13:22:01] INFO  — Region: fra1 · memory: 128mb
+[13:22:02] WARN  — Cold start detected (423ms)
+[13:22:04] ERROR — Edge function crashed
+[13:22:04]        TypeError: cannot read properties of undefined
+[13:22:04]        at /api/edge (runtime.js:241:17)
+[13:22:05] WARN  — Attempting automatic restart...
+[13:22:06] ERROR — Restart failed
+[13:22:06]        Edge exceeded execution time limit
+[13:22:06] FATAL — Vercel edge runtime halted
+[13:22:07] INFO  — Request queue exceeded capacity
+          </div>
+        </div>
+
         <footer style="text-align:left; margin-top:10px;">
           Updated automatically · Last 7 days
         </footer>
+
       </div>
 
     </div>

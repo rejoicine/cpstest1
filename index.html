@@ -3,290 +3,106 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Bloxd Autoclicker Detector — Rejo Edition (CPS Scaled + Real-Time Mouse)</title>
-
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- React / ReactDOM / Babel -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+  <title>Site Offline — Edge Request Error</title>
+  <meta name="robots" content="noindex,nofollow">
   <style>
-    body { background: #000; color: #fff; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
-    .card { background: #050505; border: 1px solid #141414; }
-    .sparkline-canvas { width: 100%; height: 80px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius: 8px; border: 1px solid rgba(255,255,255,0.04); }
-    .countdown-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.75); z-index: 50; font-size: 5rem; font-weight: bold; color: #fff; text-shadow: 0 0 20px #6366f1; }
+    :root{
+      --bg:#0b0f17;
+      --card:#0f1720;
+      --muted:#94a3b8;
+      --accent:#7c3aed;
+      --danger:#ef4444;
+      --glass: rgba(255,255,255,0.03);
+    }
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,var(--bg),#02040a);color:#eef2ff}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px}
+    .card{
+      width:100%;max-width:920px;padding:32px;border-radius:12px;background:linear-gradient(180deg,var(--card),rgba(15,23,32,0.9));
+      box-shadow:0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.03);
+      backdrop-filter: blur(6px);
+    }
+    h1{margin:0 0 8px;font-size:22px;letter-spacing:-0.4px}
+    p.lead{margin:0 0 18px;color:var(--muted);line-height:1.45}
+    .status{
+      display:inline-flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--glass);
+      border:1px solid rgba(255,255,255,0.03);font-weight:600;color:#fff;
+    }
+    .status .code{background:rgba(0,0,0,0.25);padding:6px 10px;border-radius:8px;font-weight:700}
+    .explain{display:grid;grid-template-columns:1fr 260px;gap:24px;margin-top:18px}
+    .box{padding:16px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
+    .actions{display:flex;gap:12px;margin-top:14px}
+    a.btn{display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:600}
+    .btn.retry{background:linear-gradient(90deg,var(--accent),#4f46e5);color:white}
+    .btn.status{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+    .hint{font-size:13px;color:var(--muted);margin-top:12px}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    @media (max-width:760px){
+      .explain{grid-template-columns:1fr;gap:12px}
+      .card{padding:20px}
+    }
   </style>
 </head>
 <body>
-<div id="root"></div>
-
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef } = React;
-
-// ----------------- Mouse Viewer -----------------
-function MouseViewer({ pressedButton }) {
-  const highlight = (btn) => pressedButton === btn ? "#fff" : "#666";
-  return (
-    <div className="flex flex-col items-center mt-3">
-      <svg width="120" viewBox="0 0 800 800">
-        <path fill="#222" d="M407.352 0C270.94 0 132.854 68.485 132.854 199.394v333.458c0 147.309 119.834 267.146 267.146 267.146 147.31 0 267.144-119.837 267.144-267.146V199.394C667.144 62.392 532.484 0 407.352 0z"/>
-        <path fill={highlight("left")} d="M353.91 80.986v232.572c-35.626 6.284-140.372-23.044-140.372-23.044C186.301 83.084 353.91 80.986 353.91 80.986z"/>
-        <path fill={highlight("middle")} d="M428.285 108.565v182.287c0 13.88-11.27 25.146-25.142 25.146-13.876 0-25.144-11.265-25.144-25.146V108.565c0-13.879 11.266-25.144 25.144-25.144 13.87 0 25.142 11.265 25.142 25.144z"/>
-        <path fill={highlight("right")} d="M592.917 292.514s-104.746 29.328-140.372 23.044V82.986s167.61 2.097 140.372 209.528z"/>
-      </svg>
-      <p className="text-xs text-gray-400 mt-1">Mouse Button Viewer</p>
-    </div>
-  );
-}
-
-// ----------------- Microtime -----------------
-function microtime() { return Date.now() / 1000; }
-
-// ----------------- Analyzer (CPS scaled) -----------------
-function analyzeClicks(timestamps) {
-  if(timestamps.length<2) return { cps:0, intervals:[], verdict:"insufficient", reasons:["Not enough clicks"], doubleClicks:0 };
-
-  const intervals = [];
-  for(let i=1;i<timestamps.length;i++){
-    intervals.push(timestamps[i]-timestamps[i-1]);
-  }
-
-  const duration = timestamps[timestamps.length-1]-timestamps[0];
-  const avgCPS = (timestamps.length-1)/duration;
-  const scaledIntervals = intervals.map(i => i * avgCPS);
-
-  const cps = (timestamps.length-1)/duration;
-  const avg = scaledIntervals.reduce((a,b)=>a+b,0)/scaledIntervals.length;
-  const variance = scaledIntervals.reduce((a,b)=>a+Math.pow(b-avg,2),0)/scaledIntervals.length;
-  const std = Math.sqrt(variance);
-  const consistency = avg>0?(1-std/avg)*100:0;
-
-  const doubleClicks = scaledIntervals.filter(i=>i <= 0.08*avgCPS).length;
-  const bursts = scaledIntervals.filter(i=>i <= 0.07*avgCPS).length;
-
-  const reasons = [];
-  if(consistency>70) reasons.push("Very consistent intervals");
-  if(doubleClicks>3) reasons.push("Multiple double clicks detected");
-  if(bursts>6) reasons.push("Rapid bursts detected");
-
-  let oscillations=0;
-  for(let i=2;i<scaledIntervals.length;i++){
-    const a=scaledIntervals[i-2],b=scaledIntervals[i-1],c=scaledIntervals[i];
-    if((c>b&&b<a)||(c<b&&b>a)) oscillations++;
-  }
-  if(oscillations>=scaledIntervals.length*0.45) reasons.push("Oscillation pattern detected");
-
-  const spikes=scaledIntervals.filter(i=>i<0.03*avgCPS).length;
-  if(spikes>3) reasons.push("Threshold spikes detected");
-
-  let verdict = "legit";
-  const doubleClickPercentage = (doubleClicks/timestamps.length)*100;
-  const oscillationPercentage = scaledIntervals.length>0 ? (oscillations/scaledIntervals.length)*100 : 0;
-
-  if(doubleClickPercentage>50 && doubleClickPercentage<80 && oscillationPercentage>50){
-    verdict="broken-mouse";
-    reasons.push("Mouse probably broken (double clicks / switch issue)");
-  } else if(reasons.length>=3) verdict="auto";
-
-  return { cps, intervals:scaledIntervals, consistency, doubleClicks, bursts, verdict, reasons };
-}
-
-// ----------------- Sparkline -----------------
-function Sparkline({ intervals }){
-  const ref = useRef(null);
-  useEffect(()=>{
-    const c = ref.current;
-    if(!c) return;
-    const ctx = c.getContext("2d");
-    const w = c.width = c.offsetWidth * devicePixelRatio;
-    const h = c.height = c.offsetHeight * devicePixelRatio;
-    ctx.scale(devicePixelRatio, devicePixelRatio);
-    ctx.clearRect(0,0,w,h);
-
-    const data = intervals.slice(-60);
-    if(!data.length) return;
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-    const range = Math.max(0.01, max-min);
-
-    ctx.beginPath();
-    data.forEach((v,i)=>{
-      const x = (i/(data.length-1))*c.offsetWidth;
-      const y = c.offsetHeight - ((v-min)/range)*c.offsetHeight;
-      i?ctx.lineTo(x,y):ctx.moveTo(x,y);
-    });
-    ctx.strokeStyle="#6366f1";
-    ctx.lineWidth=2;
-    ctx.stroke();
-  },[intervals]);
-
-  return <canvas ref={ref} className="sparkline-canvas"/>;
-}
-
-// ----------------- Main App -----------------
-function App(){
-  const [step,setStep] = useState(1);
-  const [length,setLength] = useState(10);
-  const [running,setRunning] = useState(false);
-  const [count,setCount] = useState(0);
-  const [doubleCount,setDoubleCount] = useState(0);
-  const [liveCPS,setLiveCPS] = useState(0);
-  const [remaining,setRemaining] = useState(0);
-  const [result,setResult] = useState(null);
-  const [countdown,setCountdown] = useState(null);
-  const [intervals,setIntervals] = useState([]);
-  const [pressedButton,setPressedButton] = useState(null);
-  const timesRef = useRef([]);
-
-  // Countdown
-  function bigStartCountdown(){
-    setCountdown(3);
-    let n=3;
-    const timer=setInterval(()=>{
-      n--;
-      if(n===0){
-        setCountdown("GO!");
-        setTimeout(()=>{clearInterval(timer); setCountdown(null); start();},600);
-      } else setCountdown(n);
-    },1000);
-  }
-
-  function start(){
-    timesRef.current=[];
-    setRunning(true);
-    setStep(3);
-    setCount(0);
-    setDoubleCount(0);
-    setIntervals([]);
-    const startT = microtime();
-    const tick = setInterval(()=>{
-      const elapsed = microtime()-startT;
-      setRemaining(Math.max(0,length-elapsed));
-      if(elapsed>=length){
-        clearInterval(tick);
-        stop();
-      }
-    },100);
-  }
-
-  function stop(){
-    setRunning(false);
-    const r = analyzeClicks(timesRef.current);
-    setResult({...r, clicks: timesRef.current.length});
-    setStep(4);
-  }
-
-  function handlePointerDown(e){
-    const map = {0:"left",1:"middle",2:"right"};
-    setPressedButton(map[e.button] || null);
-    click(e);
-  }
-
-  function handlePointerUp(e){
-    setPressedButton(null);
-  }
-
-  function click(e){
-    if(!running) return;
-    e.preventDefault();
-
-    const now = microtime();
-    const t = timesRef.current;
-    t.push(now);
-    setCount(t.length);
-
-    if(t.length>1){
-      const diff = now - t[t.length-2];
-      const currentCPS = diff>0?1/diff:0;
-      setIntervals(prev => [...prev.slice(-59), currentCPS]);
-      if(diff <= 0.08) setDoubleCount(dc=>dc+1);
-    }
-
-    const recent = t.filter(ts=>now-ts<=1).length;
-    setLiveCPS(recent);
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10">
-      <div className="card rounded-3xl p-8 w-full max-w-3xl space-y-8">
-        <h1 className="text-center text-3xl font-bold">
-          <span className="text-indigo-500">Rejo</span> Autoclicker Detector
-        </h1>
-
-        {/* Step 1 */}
-        {step===1 && (
-          <div className="space-y-6">
-            <p>Click below to begin testing your clicks.</p>
-            <button onClick={()=>setStep(2)} className="w-full py-3 bg-indigo-600 rounded-xl hover:bg-indigo-700">Continue</button>
+  <div class="wrap">
+    <div class="card" role="status" aria-live="polite">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap">
+        <div>
+          <div class="status" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex:0 0 auto">
+              <path d="M12 2v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 8v7a7 7 0 0 0 14 0V8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 8h8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span style="display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1">
+              <span style="font-size:13px;opacity:0.95">Site Offline</span>
+              <span style="font-size:12px;color:var(--muted)">Edge request failure</span>
+            </span>
           </div>
-        )}
+        </div>
 
-        {/* Step 2 */}
-        {step===2 && (
-          <div className="space-y-4">
-            <label>Test length: {length}s</label>
-            <input type="range" min="5" max="20" value={length} onChange={e=>setLength(+e.target.value)} className="w-full"/>
-            <button onClick={bigStartCountdown} className="w-full py-3 bg-indigo-600 rounded-xl hover:bg-indigo-700">Start Test</button>
-          </div>
-        )}
-
-        {/* Step 3 */}
-        {step===3 && (
-          <div className="space-y-4 text-center">
-            <div 
-              onPointerDown={handlePointerDown} 
-              onPointerUp={handlePointerUp} 
-              onContextMenu={e=>e.preventDefault()} 
-              className="w-full bg-red-600 text-3xl font-bold rounded-3xl py-40 select-none cursor-pointer active:scale-95 transition-transform">
-              CLICK HERE
-            </div>
-
-            <div className="flex justify-between text-sm opacity-80">
-              <span>Clicks: {count}</span>
-              <span>Live CPS: {liveCPS.toFixed(1)}</span>
-              <span>Double Clicks: {doubleCount}</span>
-              <span>Time: {remaining.toFixed(1)}s</span>
-            </div>
-
-            <Sparkline intervals={intervals}/>
-            <MouseViewer pressedButton={pressedButton}/>
-          </div>
-        )}
-
-        {/* Step 4 */}
-        {step===4 && result && (
-          <div className="space-y-3">
-            <h2 className="text-xl font-semibold">Results</h2>
-            <p><b>Clicks:</b> {result.clicks}</p>
-            <p><b>CPS:</b> {result.cps.toFixed(2)}</p>
-            <p><b>Consistency:</b> {result.consistency.toFixed(1)}%</p>
-            <p><b>Double Clicks:</b> {result.doubleClicks}</p>
-            <p><b>Verdict:</b> 
-              {result.verdict==="auto"?<span className="text-red-500 font-semibold"> Likely Autoclicker</span>:
-               result.verdict==="broken-mouse"?<span className="text-yellow-400 font-semibold"> Mouse Probably Broken</span>:
-               result.verdict==="legit"?<span className="text-green-500 font-semibold"> Probably Legit</span>:
-               <span className="text-gray-400"> Insufficient Data</span>}
-            </p>
-            {result.reasons.length>0 && (
-              <ul className="text-red-400 list-disc list-inside text-sm">
-                {result.reasons.map((r,i)=><li key={i}>{r}</li>)}
-              </ul>
-            )}
-            <Sparkline intervals={result.intervals}/>
-            <button onClick={()=>setStep(2)} className="w-full py-3 bg-indigo-600 rounded-xl hover:bg-indigo-700">Run Again</button>
-          </div>
-        )}
-
+        <div class="status" aria-hidden="true">
+          <span class="code">503</span>
+          <span style="opacity:0.85">Vercel edge handler error</span>
+        </div>
       </div>
-      {countdown && <div className="countdown-overlay">{countdown}</div>}
-    </div>
-  );
-}
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-</script>
+      <h1>Vercel cannot handle edge requests — site is offline</h1>
+      <p class="lead">The server attempted to process an edge function request but failed. The site is temporarily offline for edge requests. This page indicates the deployment couldn't serve the request from an edge runtime.</p>
+
+      <div class="explain">
+        <div class="box">
+          <strong>What happened</strong>
+          <ul style="margin:12px 0 0 18px;color:var(--muted);line-height:1.6">
+            <li>Edge runtime did not respond or is misconfigured.</li>
+            <li>The request could not be routed to a fallback server.</li>
+            <li>Deployment may be paused or contains an incompatible edge handler.</li>
+          </ul>
+
+          <div class="actions">
+            <a class="btn retry" href="#" onclick="location.reload();return false">Retry</a>
+            <a class="btn status" href="#" onclick="alert('Contact site owner or check Vercel dashboard.');return false">Check status</a>
+          </div>
+
+          <p class="hint">If you are the site owner: check your Vercel dashboard, verify your edge function configuration, and confirm there are healthy regions for edge runtime.</p>
+        </div>
+
+        <div class="box">
+          <strong>Quick troubleshooting</strong>
+          <ol style="margin:12px 0 0 18px;color:var(--muted);line-height:1.6;padding-left:14px">
+            <li>Open the Vercel deployment dashboard.</li>
+            <li>Check edge function logs and recent failures.</li>
+            <li>Temporarily disable edge middleware to serve from serverless functions.</li>
+            <li>Verify runtime/Node version and environment variables.</li>
+          </ol>
+        </div>
+      </div>
+
+      <footer>
+        <div>Reference code: <code style="background:rgba(255,255,255,0.02);padding:4px 8px;border-radius:6px">HTTP 503 — Service Unavailable</code></div>
+        <div style="margin-top:8px">If you need help, contact the site administrator or try again in a few minutes.</div>
+      </footer>
+    </div>
+  </div>
 </body>
 </html>

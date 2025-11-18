@@ -1,108 +1,252 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Site Offline — Edge Request Error</title>
-  <meta name="robots" content="noindex,nofollow">
-  <style>
-    :root{
-      --bg:#0b0f17;
-      --card:#0f1720;
-      --muted:#94a3b8;
-      --accent:#7c3aed;
-      --danger:#ef4444;
-      --glass: rgba(255,255,255,0.03);
-    }
-    html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,var(--bg),#02040a);color:#eef2ff}
-    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:32px}
-    .card{
-      width:100%;max-width:920px;padding:32px;border-radius:12px;background:linear-gradient(180deg,var(--card),rgba(15,23,32,0.9));
-      box-shadow:0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
-      border:1px solid rgba(255,255,255,0.03);
-      backdrop-filter: blur(6px);
-    }
-    h1{margin:0 0 8px;font-size:22px;letter-spacing:-0.4px}
-    p.lead{margin:0 0 18px;color:var(--muted);line-height:1.45}
-    .status{
-      display:inline-flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:var(--glass);
-      border:1px solid rgba(255,255,255,0.03);font-weight:600;color:#fff;
-    }
-    .status .code{background:rgba(0,0,0,0.25);padding:6px 10px;border-radius:8px;font-weight:700}
-    .explain{display:grid;grid-template-columns:1fr 260px;gap:24px;margin-top:18px}
-    .box{padding:16px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
-    .actions{display:flex;gap:12px;margin-top:14px}
-    a.btn{display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:600}
-    .btn.retry{background:linear-gradient(90deg,var(--accent),#4f46e5);color:white}
-    .btn.status{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
-    .hint{font-size:13px;color:var(--muted);margin-top:12px}
-    footer{margin-top:18px;color:var(--muted);font-size:13px}
-    @media (max-width:760px){
-      .explain{grid-template-columns:1fr;gap:12px}
-      .card{padding:20px}
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Bloxd Friendly CPS Test by Rejo</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+body {
+  margin:0;
+  padding:0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg,#0D0D0D,#1A1A1A);
+  color: #FFFFFF;
+}
+.card {
+  background: #111;
+  border-radius: 24px;
+  border: 1px solid #444;
+  padding: 2rem;
+  box-shadow: 0 0 20px rgba(255,215,0,0.2);
+}
+.sparkline-canvas {
+  width: 100%;
+  height: 120px;
+  border-radius: 8px;
+  background: transparent;
+}
+.countdown-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.75);
+  z-index: 50;
+  font-size: 6rem;
+  font-weight: bold;
+  color: #FFD700;
+  text-shadow: 0 0 20px #FFEA00,0 0 40px #FFC000;
+}
+.button-gold {
+  background: linear-gradient(90deg,#FFEA00,#FFC000);
+  color:#000;
+}
+.button-gold:hover {
+  background: linear-gradient(90deg,#FFD700,#FFBF00);
+}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card" role="status" aria-live="polite">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap">
-        <div>
-          <div class="status" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex:0 0 auto">
-              <path d="M12 2v6" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M5 8v7a7 7 0 0 0 14 0V8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M8 8h8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <span style="display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1">
-              <span style="font-size:13px;opacity:0.95">Site Offline</span>
-              <span style="font-size:12px;color:var(--muted)">Edge request failure</span>
-            </span>
-          </div>
-        </div>
+<div id="root"></div>
 
-        <div class="status" aria-hidden="true">
-          <span class="code">503</span>
-          <span style="opacity:0.85">Vercel edge handler error</span>
-        </div>
-      </div>
+<script type="text/babel" data-presets="env,react">
+const { useState,useEffect,useRef }=React;
 
-      <h1>Vercel cannot handle edge requests — site is offline</h1>
-      <p class="lead">The server attempted to process an edge function request but failed. The site is temporarily offline for edge requests. This page indicates the deployment couldn't serve the request from an edge runtime.</p>
-
-      <div class="explain">
-        <div class="box">
-          <strong>What happened</strong>
-          <ul style="margin:12px 0 0 18px;color:var(--muted);line-height:1.6">
-            <li>Edge runtime did not respond or is misconfigured.</li>
-            <li>The request could not be routed to a fallback server.</li>
-            <li>Deployment may be paused or contains an incompatible edge handler.</li>
-          </ul>
-
-          <div class="actions">
-            <a class="btn retry" href="#" onclick="location.reload();return false">Retry</a>
-            <a class="btn status" href="#" onclick="alert('Contact site owner or check Vercel dashboard.');return false">Check status</a>
-          </div>
-
-          <p class="hint">If you are the site owner: check your Vercel dashboard, verify your edge function configuration, and confirm there are healthy regions for edge runtime.</p>
-        </div>
-
-        <div class="box">
-          <strong>Quick troubleshooting</strong>
-          <ol style="margin:12px 0 0 18px;color:var(--muted);line-height:1.6;padding-left:14px">
-            <li>Open the Vercel deployment dashboard.</li>
-            <li>Check edge function logs and recent failures.</li>
-            <li>Temporarily disable edge middleware to serve from serverless functions.</li>
-            <li>Verify runtime/Node version and environment variables.</li>
-          </ol>
-        </div>
-      </div>
-
-      <footer>
-        <div>Reference code: <code style="background:rgba(255,255,255,0.02);padding:4px 8px;border-radius:6px">HTTP 503 — Service Unavailable</code></div>
-        <div style="margin-top:8px">If you need help, contact the site administrator or try again in a few minutes.</div>
-      </footer>
+// ----------------- Mouse Viewer -----------------
+function MouseViewer({lastButton,isClicking}){
+  const colors={left:"#FFD700",middle:"#FFEA00",right:"#00FF7F"};
+  const highlight=(btn)=>(isClicking && lastButton===btn ? colors[btn] : "#666");
+  return (
+    <div className="flex flex-col items-center mt-3">
+      <svg width="140" viewBox="0 0 800 800">
+        <path fill="#111" d="M407.352 0C270.94 0 132.854 68.485 132.854 199.394v333.458c0 147.309 119.834 267.146 267.146 267.146 147.31 0 267.144-119.837 267.144-267.146V199.394C667.144 62.392 532.484 0 407.352 0z"/>
+        <path fill={highlight("left")} d="M353.91 80.986v232.572c-35.626 6.284-140.372-23.044-140.372-23.044C186.301 83.084 353.91 80.986 353.91 80.986z"/>
+        <path fill={highlight("middle")} d="M428.285 108.565v182.287c0 13.88-11.27 25.146-25.142 25.146-13.876 0-25.144-11.265-25.144-25.146V108.565c0-13.879 11.266-25.144 25.144-25.144 13.87 0 25.142 11.265 25.142 25.144z"/>
+        <path fill={highlight("right")} d="M592.917 292.514s-104.746 29.328-140.372 23.044V82.986s167.61 2.097 140.372 209.528z"/>
+      </svg>
+      <p className="text-sm text-green-400 mt-1">Mouse Button Viewer</p>
     </div>
-  </div>
+  )
+}
+
+// ----------------- Microtime -----------------
+function microtime(){return Date.now()/1000;}
+
+// ----------------- Analyzer -----------------
+function analyzeClicks(timestamps){
+  if(timestamps.length<2) return {cps:0,intervals:[],verdict:"insufficient",reasons:["Not enough clicks"],doubleClicks:0,bursts:0,std:0};
+  const intervals=[];
+  for(let i=1;i<timestamps.length;i++){intervals.push(timestamps[i]-timestamps[i-1]);}
+  const duration=timestamps.at(-1)-timestamps[0];
+  const cps=(timestamps.length-1)/duration;
+  const avg=intervals.reduce((a,b)=>a+b,0)/intervals.length;
+  const variance=intervals.reduce((a,b)=>a+Math.pow(b-avg,2),0)/intervals.length;
+  const std=Math.sqrt(variance);
+  const consistency=avg>0?(1-std/avg)*100:0;
+  const doubleClicks=intervals.filter(i=>i<=0.08).length;
+  const bursts=intervals.filter(i=>i<=0.07).length;
+  let verdict="legit";let reasons=[];
+  if(consistency<30||bursts>6||doubleClicks>5){verdict="auto";reasons.push("Suspicious clicking pattern detected");}
+  return {cps,intervals,consistency,doubleClicks,bursts,std,verdict,reasons};
+}
+
+// ----------------- Sparkline w/ Heatmap -----------------
+function Sparkline({intervals,color="#FFD700"}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const c=ref.current;if(!c)return;
+    const ctx=c.getContext("2d");
+    const w=c.width=c.offsetWidth*devicePixelRatio;
+    const h=c.height=c.offsetHeight*devicePixelRatio;
+    ctx.scale(devicePixelRatio,devicePixelRatio);
+    ctx.clearRect(0,0,w,h);
+    const data=intervals.slice(-60);
+    if(!data.length) return;
+    const min=Math.min(...data),max=Math.max(...data),range=Math.max(1,max-min);
+    ctx.beginPath();
+    ctx.lineJoin="round";ctx.lineCap="round";
+    data.forEach((v,i)=>{
+      const x=(i/(data.length-1))*c.offsetWidth;
+      const y=c.offsetHeight-((v-min)/range)*c.offsetHeight;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      // heatmap dots
+      if(v<0.07){ctx.fillStyle="#FF4500";ctx.beginPath();ctx.arc(x,y,4,0,2*Math.PI);ctx.fill();}
+      else if(v<0.12){ctx.fillStyle="#00FF7F";ctx.beginPath();ctx.arc(x,y,3,0,2*Math.PI);ctx.fill();}
+    });
+    ctx.strokeStyle=color;
+    ctx.lineWidth=2.5;
+    ctx.shadowColor=color;ctx.shadowBlur=6;
+    ctx.stroke();
+  },[intervals,color]);
+  return <canvas ref={ref} className="sparkline-canvas"/>
+}
+
+// ----------------- Tier System -----------------
+function calculateTier(cps,consistency){
+  if(cps>=15&&consistency>=80) return {name:"S+",color:"#FFD700",icon:"🏆"};
+  if(cps>=10&&consistency>=60) return {name:"A",color:"#FFBF00",icon:"✨"};
+  if(cps>=5&&consistency>=40) return {name:"B",color:"#DAA520",icon:"⚡"};
+  return {name:"C",color:"#FFDB58",icon:"🔹"};
+}
+
+// ----------------- Main App -----------------
+function App(){
+  const [step,setStep]=useState(1);
+  const [length,setLength]=useState(10);
+  const [running,setRunning]=useState(false);
+  const [count,setCount]=useState(0);
+  const [doubleCount,setDoubleCount]=useState(0);
+  const [liveCPS,setLiveCPS]=useState(0);
+  const [remaining,setRemaining]=useState(0);
+  const [result,setResult]=useState(null);
+  const [countdown,setCountdown]=useState(null);
+  const [intervals,setIntervals]=useState([]);
+  const [lastButton,setLastButton]=useState(null);
+  const [isClicking,setIsClicking]=useState(false);
+  const [history,setHistory]=useState([]);
+  const timesRef=useRef([]);
+
+  function bigStartCountdown(){
+    setCountdown(3);
+    let n=3;
+    const timer=setInterval(()=>{
+      n--;if(n===0){setCountdown("GO!");setTimeout(()=>{clearInterval(timer);setCountdown(null);start();},600);}
+      else setCountdown(n);
+    },1000);
+  }
+
+  function start(){timesRef.current=[];setRunning(true);setStep(3);setCount(0);setDoubleCount(0);setIntervals([]);
+    const startT=microtime();
+    const tick=setInterval(()=>{const elapsed=microtime()-startT;setRemaining(Math.max(0,length-elapsed));
+      if(elapsed>=length){clearInterval(tick);stop();}},100);
+  }
+
+  function stop(){setRunning(false);setIsClicking(false);
+    const r=analyzeClicks(timesRef.current);
+    setResult({...r,clicks:timesRef.current.length});
+    setStep(4);
+    setHistory(prev=>[{...r,clicks:timesRef.current.length,date:new Date()},...prev].slice(0,5));
+  }
+
+  function click(e){if(!running)return;e.preventDefault();
+    const map={0:"left",1:"middle",2:"right"};setLastButton(map[e.button]||null);setIsClicking(true);
+    const now=microtime();const t=timesRef.current;t.push(now);setCount(c=>c+1);
+    if(t.length>1){const diff=now-t[t.length-2];if(diff<=0.08)setDoubleCount(dc=>dc+1);setIntervals(prev=>[...prev.slice(-59),diff*1000]);}
+    const cps=t.filter(ts=>ts>now-1).length;setLiveCPS(cps);
+  }
+
+  function releaseClick(){setIsClicking(false);}
+  const currentTier=calculateTier(liveCPS,0);
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
+      <div className="card w-full max-w-5xl flex flex-col space-y-6">
+        <h1 className="text-center text-3xl font-bold text-yellow-400">
+          Bloxd <span className="text-white">Friendly CPS Test by Rejo</span>
+        </h1>
+
+        {step===1&&<div className="space-y-6 text-center">
+          <p>Click below to begin testing your clicks.</p>
+          <button onClick={()=>setStep(2)} className="w-full py-3 button-gold rounded-xl font-semibold">Continue</button>
+        </div>}
+
+        {step===2&&<div className="space-y-4">
+          <label>Test length: {length}s</label>
+          <input type="range" min="5" max="20" value={length} onChange={e=>setLength(+e.target.value)} className="w-full"/>
+          <button onClick={bigStartCountdown} className="w-full py-3 button-gold rounded-xl font-semibold">Start Test</button>
+        </div>}
+
+        {step===3&&<div className="space-y-4 text-center w-full">
+          <h2 className="text-xl font-bold mb-2" style={{color:currentTier.color}}>{currentTier.icon} Live Tier: {currentTier.name}</h2>
+          <div onPointerDown={click} onPointerUp={releaseClick} onContextMenu={e=>e.preventDefault()} className="w-full bg-amber-600 text-4xl font-bold rounded-3xl py-60 select-none cursor-pointer active:scale-95 transition-transform">
+            CLICK HERE
+          </div>
+          <div className="flex justify-between text-sm opacity-80 mt-2">
+            <span>Clicks: {count}</span>
+            <span>Live CPS: {liveCPS.toFixed(1)}</span>
+            <span>Double Clicks: {doubleCount}</span>
+            <span>Time: {remaining.toFixed(1)}s</span>
+          </div>
+          <Sparkline intervals={intervals} color={currentTier.color}/>
+          <MouseViewer lastButton={lastButton} isClicking={isClicking}/>
+        </div>}
+
+        {step===4&&result&&(() => {const tier=calculateTier(result.cps,result.consistency);return(
+          <div className="space-y-4">
+            <h2 className="text-2xl font-bold text-center" style={{color:tier.color}}>{tier.icon} Tier: {tier.name}</h2>
+            <div className="card p-6 rounded-2xl border shadow-lg" style={{borderColor:tier.color,boxShadow:`0 0 15px ${tier.color}`}}>
+              <p><b>Clicks:</b> {result.clicks}</p>
+              <p><b>CPS:</b> {result.cps.toFixed(2)}</p>
+              <p><b>Consistency:</b> {result.consistency?.toFixed?.(1)||0}%</p>
+              <p><b>Std Dev:</b> {result.std.toFixed(2)}s</p>
+              <p><b>Double Clicks:</b> {result.doubleClicks}</p>
+              <p><b>Bursts:</b> {result.bursts}</p>
+              <p><b>Verdict:</b> {result.verdict==="auto"?<span className="text-red-500 font-semibold"> Suspicious</span>:result.verdict==="insufficient"?<span className="text-gray-400 font-semibold"> Not Enough Data</span>:<span className="text-green-500 font-semibold"> Legit</span>}</p>
+              <Sparkline intervals={result.intervals} color={tier.color}/>
+            </div>
+            {history.length>0&&<div className="mt-4">
+              <h3 className="text-lg font-semibold">Recent Tests</h3>
+              <div className="space-y-2">{history.map((h,i)=>{const ht=calculateTier(h.cps,h.consistency);return(
+                <div key={i} className="flex justify-between items-center p-2 rounded-lg" style={{border:`1px solid ${ht.color}`}}>
+                  <span style={{color:ht.color}}>{ht.icon} {ht.name}</span>
+                  <span>CPS: {h.cps.toFixed(2)}</span>
+                </div>)})}</div></div>}
+            <button onClick={()=>setStep(2)} className="w-full py-3 button-gold rounded-xl font-semibold">Run Again</button>
+          </div>)})()}
+      </div>
+      {countdown&&<div className="countdown-overlay">{countdown}</div>}
+    </div>
+  )
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
 </body>
 </html>
